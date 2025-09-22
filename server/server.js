@@ -13,8 +13,13 @@ connectDB(process.env.MONGO_URI);
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log(req.path, req.method);
+  next();
+});
+
 app.use("/api/auth", authRoute);
 app.use("/api/user", tokenRoute);
-app.use("/api/organization", organizationRoute);
+app.use("/api/org", organizationRoute);
 
 app.listen(port, () => console.log(`🚀 Server running on port ${port}`));

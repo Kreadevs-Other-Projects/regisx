@@ -1,12 +1,12 @@
 import express from "express";
 import {
-  createOrganization,
-  getUserOrganizations,
+  registerOrganization,
+  loginOrganization,
 } from "../controllers/organizationController.js";
 
 const router = express.Router();
 
-router.post("/create", createOrganization);
-router.get("/user/:userId", getUserOrganizations);
+router.post("/register", registerOrganization);
+router.post("/login", loginOrganization);
 
 export default router;

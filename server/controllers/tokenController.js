@@ -1,26 +1,53 @@
-import jwt from "jsonwebtoken";
+import Token from "../models/Token.js";
+import Organization from "../models/Organization.js";
 
-const SECRET_KEY = process.env.JWT_SECRET || "mySuperSecretKey";
-
-export const generateUserToken = (userId) => {
-  return jwt.sign({ userId }, SECRET_KEY, { expiresIn: "1h" });
-};
-
-export const generateOrgToken = (userId, organizationId) => {
-  return jwt.sign({ userId, organizationId }, SECRET_KEY, { expiresIn: "2h" });
-};
-
-export const verifyToken = (req, res) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(400).json({ error: "Token is required" });
-  }
-
+export const generateToken = async (req, res) => {
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-    res.json({ valid: true, decoded });
+    const { userId, organizationId } = req.body;
+
+    if (!userId || !organizationId) {
+      return res
+        .status(400)
+        .json({ error: "userId and organizationId are required" });
+    }
+
+    const org = await Organization.findById(organizationId);
+    if (!org) return res.status(404).json({ error: "Organization not found" });
+
+    const lastToken = await Token.findOne({ organizationId })
+      .sort({ number: -1 })
+      .exec();
+
+    const nextNumber = lastToken ? lastToken.number + 1 : 1;
+
+    const newToken = new Token({
+      userId,
+      organizationId,
+      number: nextNumber,
+    });
+
+    await newToken.save();
+
+    res.json({
+      success: true,
+      tokenNumber: nextNumber,
+      message: `Token ${nextNumber} generated for organization ${org.name}`,
+    });
   } catch (err) {
-    res.status(401).json({ valid: false, error: "Invalid or expired token" });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getOrganizationTokens = async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+
+    const tokens = await Token.find({ organizationId })
+      .populate("userId", "username email")
+      .sort({ number: 1 });
+
+    res.json(tokens);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
