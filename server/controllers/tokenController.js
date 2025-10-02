@@ -28,6 +28,10 @@ export const generateToken = async (req, res) => {
 
     await newToken.save();
 
+    await Organization.findByIdAndUpdate(organizationId, {
+      $inc: { totalQueueTickets: 1 },
+    });
+
     res.json({
       success: true,
       tokenNumber: nextNumber,
@@ -47,6 +51,43 @@ export const getOrganizationTokens = async (req, res) => {
       .sort({ number: 1 });
 
     res.json(tokens);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const serveNextToken = async (req, res) => {
+  try {
+    const { organizationId } = req.body;
+
+    const org = await Organization.findById(organizationId);
+    if (!org) return res.status(404).json({ error: "Organization not found" });
+
+    const nextToken = await Token.findOne({
+      organizationId,
+      status: "waiting",
+    }).sort({ number: 1 });
+
+    if (!nextToken) {
+      return res.json({ message: "No tokens waiting in queue" });
+    }
+
+    await Token.findOneAndUpdate(
+      { organizationId, status: "serving" },
+      { status: "completed" }
+    );
+
+    nextToken.status = "serving";
+    await nextToken.save();
+
+    org.currentQueueNumber = nextToken.number;
+    await org.save();
+
+    res.json({
+      success: true,
+      servingToken: nextToken.number,
+      message: `Now serving token ${nextToken.number} for ${org.name}`,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

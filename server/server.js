@@ -18,8 +18,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api/auth", authRoute);
-app.use("/api/user", tokenRoute);
-app.use("/api/org", organizationRoute);
+app.use("/auth", authRoute);
+app.use("/token", tokenRoute);
+app.use("/org", organizationRoute);
 
 app.listen(port, () => console.log(`🚀 Server running on port ${port}`));

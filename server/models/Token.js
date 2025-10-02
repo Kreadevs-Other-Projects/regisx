@@ -8,6 +8,11 @@ const tokenSchema = new mongoose.Schema({
     required: true,
   },
   number: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ["waiting", "serving", "completed"],
+    default: "waiting",
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

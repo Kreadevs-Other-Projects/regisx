@@ -1,10 +1,22 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-const organizationSchema = new mongoose.Schema({
+const OrganizationSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  logo: { type: String },
+  timing: { type: String },
+  totalQueueTickets: { type: Number, default: 0 },
+  currentQueueNumber: { type: Number, default: 0 },
+  address: { type: String },
+  lat: { type: Number },
+  lng: { type: Number },
+  email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
+  categories: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
+  ],
 });
 
-export default mongoose.model("Organization", organizationSchema);
+module.exports = mongoose.model("Organization", OrganizationSchema);
