@@ -1,4 +1,6 @@
 import express from "express";
+import upload from "../middleware/upload.js";
+const router = express.Router();
 import {
   registerOrganization,
   loginOrganization,
@@ -8,9 +10,7 @@ import {
   getOrganizationById,
 } from "../controllers/organizationController.js";
 
-const router = express.Router();
-
-router.post("/register", registerOrganization);
+router.post("/register", upload.single("logo"), registerOrganization);
 router.post("/login", loginOrganization);
 router.post("/categories", createCategory);
 router.post("/members", addMember);

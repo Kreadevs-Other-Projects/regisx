@@ -1,45 +1,107 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import Organization from "../models/Organization.js";
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Name, email, and password are required",
+      });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Email already registered",
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashedPassword });
+    const pic = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      pic,
+    });
 
     await user.save();
-    res.json({ success: true, user });
+
+    res.status(201).json({
+      success: true,
+      status: 201,
+      message: "User registered successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        pic: user.pic,
+      },
+    });
   } catch (err) {
-    console.log(`internal server error`, err);
-    res.status(400).json({ error: err.message });
+    console.error("Register User Error:", err);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      error: err.message,
+    });
   }
 };
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).populate("organizations");
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const user = await User.findOne({ email }).populate("organizations");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        error: "User not found",
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Invalid credentials",
+      });
+    }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    res.json({
+    res.status(200).json({
       success: true,
+      status: 200,
+      message: "Login successful",
       token,
-      organizations: user.organizations,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        pic: user.pic,
+        organizations: user.organizations,
+      },
     });
   } catch (err) {
-    console.log(`internal server error`, err);
-    res.status(500).json({ error: err.message });
+    console.error("Login User Error:", err);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      error: err.message,
+    });
   }
 };
 
@@ -48,9 +110,11 @@ export const selectOrganization = async (req, res) => {
     const { token, organizationId } = req.body;
 
     if (!token || !organizationId) {
-      return res
-        .status(400)
-        .json({ error: "Token and organizationId required" });
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Token and organizationId are required",
+      });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -61,9 +125,18 @@ export const selectOrganization = async (req, res) => {
       { expiresIn: "2h" }
     );
 
-    res.json({ success: true, token: newToken });
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Organization selected successfully",
+      token: newToken,
+    });
   } catch (err) {
-    console.log(`internal server error`, err);
-    res.status(401).json({ error: "Invalid or expired token" });
+    console.error("Select Organization Error:", err);
+    res.status(401).json({
+      success: false,
+      status: 401,
+      error: "Invalid or expired token",
+    });
   }
 };

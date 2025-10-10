@@ -7,8 +7,8 @@ import {
 
 const router = express.Router();
 
-router.post("/token/generate", generateToken);
-router.get("/token/:organizationId", getOrganizationTokens);
-router.post("/serve", serveNextToken);
+router.post("/generateToken", generateToken);
+router.get("/getOrganizationTokens/:id", getOrganizationTokens);
+router.post("/serveNextToken", serveNextToken);
 
 export default router;
