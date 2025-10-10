@@ -3,19 +3,18 @@ import { useEffect } from "react";
 import { Text, View } from "react-native";
 
 export default function Index() {
-
   const navigation = useNavigation();
 
   const naviate = () => {
     const timeout = setTimeout(() => {
-      router.navigate('/home');
-      clearTimeout(timeout);
-    })
-  }
+      router.navigate("/auth/orgAuth");
+    }, 500);
+    return () => clearTimeout(timeout);
+  };
 
   useEffect(() => {
     naviate();
-  })
+  });
 
   return (
     <View
