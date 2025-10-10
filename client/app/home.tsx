@@ -1,5 +1,5 @@
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import Header from '@/components/Header'
 import { colors } from '@/constants/style'
@@ -54,6 +54,17 @@ export const categorizedToken = [
     ]
 
 const Home = () => {
+
+
+    const [filteredData, setFileterdData] = useState([])
+    const [data, setData] = useState([categorizedToken])
+    const searchForOrganization = () => {
+        setFileterdData(setData)
+    }
+
+    useEffect(() => {
+        console.log(data);
+    }, [])
 
     return (
         <ScreenWrapper>
