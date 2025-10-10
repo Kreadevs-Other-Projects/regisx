@@ -18,6 +18,8 @@ export const registerOrganization = async (req, res) => {
       days,
     } = req.body;
 
+    const logo = req.file ? `/uploads/${req.file.filename}` : null;
+
     if (
       !name ||
       !email ||
@@ -26,12 +28,15 @@ export const registerOrganization = async (req, res) => {
       !city ||
       !country ||
       !fullAddress ||
-      !timing
+      !timing ||
+      !days ||
+      !logo
     ) {
       return res.status(400).json({
         success: false,
         status: 400,
-        error: "All required fields must be provided",
+        error:
+          "All fields (name, email, password, orgType, city, country, fullAddress, timing, days, logo) are required",
       });
     }
 
@@ -46,7 +51,10 @@ export const registerOrganization = async (req, res) => {
 
     const salt = await bcrypt.genSalt(Number(process.env.SALT_ROUNDS || 12));
     const hashed = await bcrypt.hash(password, salt);
-    const logo = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const parsedTiming =
+      typeof timing === "string" ? JSON.parse(timing) : timing;
+    const parsedDays = typeof days === "string" ? JSON.parse(days) : days;
 
     const org = new Organization({
       name,
@@ -56,8 +64,8 @@ export const registerOrganization = async (req, res) => {
       city,
       country,
       fullAddress,
-      timing: JSON.parse(timing),
-      days: days ? JSON.parse(days) : [],
+      timing: parsedTiming,
+      days: parsedDays,
       logo,
     });
 
@@ -71,6 +79,12 @@ export const registerOrganization = async (req, res) => {
         id: org._id,
         name: org.name,
         email: org.email,
+        orgType: org.orgType,
+        city: org.city,
+        country: org.country,
+        fullAddress: org.fullAddress,
+        timing: org.timing,
+        days: org.days,
         logo: org.logo,
       },
     });
