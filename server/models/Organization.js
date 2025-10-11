@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const TimingSchema = new mongoose.Schema({
-  opening: { type: String, required: true },
-  closing: { type: String, required: true },
+  opening: { type: String },
+  closing: { type: String },
 });
 
 const OrganizationSchema = new mongoose.Schema({
@@ -16,7 +16,7 @@ const OrganizationSchema = new mongoose.Schema({
   country: { type: String, required: true },
   fullAddress: { type: String, required: true },
   days: [{ type: String }],
-  timing: { type: TimingSchema, required: true },
+  timing: { type: TimingSchema },
   totalQueueTickets: { type: Number, default: 0 },
   currentQueueNumber: { type: Number, default: 0 },
   logo: { type: String },
@@ -30,6 +30,9 @@ const OrganizationSchema = new mongoose.Schema({
       ref: "Category",
     },
   ],
+  isVerified: { type: Boolean, default: false },
+  verificationCode: { type: String },
+  verificationExpires: { type: Date },
 });
 
 export default mongoose.model("Organization", OrganizationSchema);

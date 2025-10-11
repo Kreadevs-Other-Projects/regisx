@@ -3,21 +3,14 @@ import jwt from "jsonwebtoken";
 import Organization from "../models/Organization.js";
 import Member from "../models/Member.js";
 import Category from "../models/Category.js";
+import { transporter } from "../services/mail.js";
+import generateVerificationCode from "../services/otp.js";
+import { validateEmail } from "../services/validateEmail.js";
 
 export const registerOrganization = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      password,
-      orgType,
-      city,
-      country,
-      fullAddress,
-      timing,
-      days,
-    } = req.body;
-
+    const { name, email, password, orgType, city, country, fullAddress } =
+      req.body;
     const logo = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (
@@ -28,15 +21,20 @@ export const registerOrganization = async (req, res) => {
       !city ||
       !country ||
       !fullAddress ||
-      !timing ||
-      !days ||
       !logo
     ) {
       return res.status(400).json({
         success: false,
         status: 400,
-        error:
-          "All fields (name, email, password, orgType, city, country, fullAddress, timing, days, logo) are required",
+        error: "All fields are required",
+      });
+    }
+
+    if (!validateEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Invalid email format",
       });
     }
 
@@ -52,9 +50,8 @@ export const registerOrganization = async (req, res) => {
     const salt = await bcrypt.genSalt(Number(process.env.SALT_ROUNDS || 12));
     const hashed = await bcrypt.hash(password, salt);
 
-    const parsedTiming =
-      typeof timing === "string" ? JSON.parse(timing) : timing;
-    const parsedDays = typeof days === "string" ? JSON.parse(days) : days;
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     const org = new Organization({
       name,
@@ -64,32 +61,96 @@ export const registerOrganization = async (req, res) => {
       city,
       country,
       fullAddress,
-      timing: parsedTiming,
-      days: parsedDays,
       logo,
+      isVerified: false,
+      verificationCode,
+      verificationExpires,
     });
 
     await org.save();
 
+    const mailOptions = {
+      from: `"Regisx" <${process.env.EMAIL}>`,
+      to: email,
+      subject: "Verify Your Account",
+      html: `
+        <h3>Hello ${name},</h3>
+        <p>Your verification code is:</p>
+        <h2>${verificationCode}</h2>
+        <p>Enter this code in the app to verify your account.</p>
+      `,
+    };
+
+    console.log(`📧 Sending verification email to: ${email}`);
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully:", info.messageId);
+
     res.status(201).json({
       success: true,
       status: 201,
-      message: "Organization registered successfully",
-      organization: {
-        id: org._id,
-        name: org.name,
-        email: org.email,
-        orgType: org.orgType,
-        city: org.city,
-        country: org.country,
-        fullAddress: org.fullAddress,
-        timing: org.timing,
-        days: org.days,
-        logo: org.logo,
-      },
+      message:
+        "Organization registered successfully. Check your email for the verification code.",
     });
   } catch (err) {
     console.error("Register Organization Error:", err);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      error: err.message,
+    });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    const org = await Organization.findOne({ email });
+    if (!org) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        error: "Organization not found",
+      });
+    }
+
+    if (org.isVerified) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Email already verified",
+      });
+    }
+
+    if (org.verificationCode !== code) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Invalid verification code",
+      });
+    }
+
+    if (org.verificationExpires < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Verification code expired",
+      });
+    }
+
+    org.isVerified = true;
+    org.verificationCode = undefined;
+    org.verificationExpires = undefined;
+    await org.save();
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Email verified successfully",
+    });
+  } catch (err) {
+    console.error("Verify Email Error:", err);
     res.status(500).json({
       success: false,
       status: 500,
@@ -108,6 +169,14 @@ export const loginOrganization = async (req, res) => {
         success: false,
         status: 404,
         error: "Organization not found",
+      });
+    }
+
+    if (!org.isVerified) {
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        error: "Please verify your email before logging in",
       });
     }
 
@@ -271,6 +340,57 @@ export const getOrganizationById = async (req, res) => {
     });
   } catch (err) {
     console.error("Get Organization By ID Error:", err);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      error: err.message,
+    });
+  }
+};
+
+export const updateOrgTimingAndDays = async (req, res) => {
+  try {
+    const { orgId } = req.params;
+    const { timing, days } = req.body;
+
+    if (!timing || !days) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        error: "Both timing and days are required",
+      });
+    }
+
+    const parsedTiming =
+      typeof timing === "string" ? JSON.parse(timing) : timing;
+    const parsedDays = typeof days === "string" ? JSON.parse(days) : days;
+
+    const updatedOrg = await Organization.findByIdAndUpdate(
+      orgId,
+      { timing: parsedTiming, days: parsedDays },
+      { new: true }
+    );
+
+    if (!updatedOrg) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        error: "Organization not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Organization timing and days updated successfully",
+      data: {
+        id: updatedOrg._id,
+        timing: updatedOrg.timing,
+        days: updatedOrg.days,
+      },
+    });
+  } catch (err) {
+    console.error("Update Timing Error:", err);
     res.status(500).json({
       success: false,
       status: 500,

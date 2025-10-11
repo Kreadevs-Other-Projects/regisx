@@ -1,11 +1,11 @@
-import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+import express from "express";
 import authRoute from "./routes/authRoute.js";
 import tokenRoute from "./routes/tokenRoute.js";
 import organizationRoute from "./routes/organizationRoute.js";
 import connectDB from "./config/db.js";
 
-dotenv.config();
 const app = express();
 const port = process.env.PORT;
 
