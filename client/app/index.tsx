@@ -7,7 +7,7 @@ export default function Index() {
 
   const naviate = () => {
     const timeout = setTimeout(() => {
-      router.navigate("/auth/orgAuth");
+      router.navigate("/home");
     }, 500);
     return () => clearTimeout(timeout);
   };

@@ -10,7 +10,7 @@ function VerifyEmail() {
 
   const verify = async () => {
     console.log("clicker");
-    
+
     if (!email) {
       Toast.show({
         type: "error",
@@ -25,7 +25,7 @@ function VerifyEmail() {
 
     try {
       const response = await fetch(
-        `http://192.168.100.7:5000/api/org/verifyEmail`,
+        `http://192.168.100.60:5000/api/org/verifyEmail`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -38,7 +38,7 @@ function VerifyEmail() {
 
       if (response.ok) {
         Toast.show({ type: "success", text1: "Email verified successfully" });
-        // router.replace("/auth");
+        router.navigate("/auth/OrgAuth/LoginOrg");
       } else {
         Toast.show({
           type: "error",

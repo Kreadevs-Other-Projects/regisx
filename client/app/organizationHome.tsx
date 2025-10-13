@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Header from "@/components/Header";
 import { router } from "expo-router";
+import ScreenWrapper from "@/components/ScreenWrapper";
 
 const OrganizationHome = () => {
   const organization = {
@@ -23,62 +24,55 @@ const OrganizationHome = () => {
 
   return (
     <>
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        {/* <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>{organization.name}</Text>
-          <Text style={styles.subtitle}>Welcome back!</Text>
-        </View>
-        <Image source={{ uri: organization.logo }} style={styles.logo} />
-      </View> */}
+      <ScreenWrapper>
+        <Header />
+        <ScrollView style={styles.container}>
+          <View style={styles.infoContainer}>
+            <View style={styles.infoCard}>
+              <Ionicons name="calendar" size={28} color="#4CAF50" />
+              <View>
+                <Text style={styles.cardLabel}>Today</Text>
+                <Text style={styles.cardValue}>{organization.date}</Text>
+              </View>
+            </View>
 
-        <Header name="Meezan Bank" logo="client\assets\images\chasebank.png" />
+            <View style={styles.infoCard}>
+              <Ionicons name="people" size={28} color="#2196F3" />
+              <View>
+                <Text style={styles.cardLabel}>Total Queues</Text>
+                <Text style={styles.cardValue}>{organization.totalQueues}</Text>
+              </View>
+            </View>
 
-        {/* Info Section */}
-        <View style={styles.infoContainer}>
-          <View style={styles.infoCard}>
-            <Ionicons name="calendar" size={28} color="#4CAF50" />
-            <View>
-              <Text style={styles.cardLabel}>Today</Text>
-              <Text style={styles.cardValue}>{organization.date}</Text>
+            <View style={styles.infoCard}>
+              <Ionicons name="time" size={28} color="#FF9800" />
+              <View>
+                <Text style={styles.cardLabel}>Working Hours</Text>
+                <Text style={styles.cardValue}>
+                  {organization.opening} - {organization.closing}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.infoCard}>
-            <Ionicons name="people" size={28} color="#2196F3" />
-            <View>
-              <Text style={styles.cardLabel}>Total Queues</Text>
-              <Text style={styles.cardValue}>{organization.totalQueues}</Text>
-            </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.navigate("/AddQueue")}
+          >
+            <Ionicons name="add-circle-outline" size={22} color="#fff" />
+            <Text style={styles.addButtonText}>Add New Queue</Text>
+          </TouchableOpacity>
+
+          <View style={styles.featureSection}>
+            <Text style={styles.featureTitle}>Upcoming Features 🚀</Text>
+            <Text style={styles.featureText}>
+              Soon you’ll be able to auto-generate queue tickets, send reminders
+              to users, and monitor live waiting times — all from this
+              dashboard!
+            </Text>
           </View>
-
-          <View style={styles.infoCard}>
-            <Ionicons name="time" size={28} color="#FF9800" />
-            <View>
-              <Text style={styles.cardLabel}>Working Hours</Text>
-              <Text style={styles.cardValue}>
-                {organization.opening} - {organization.closing}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Action Section */}
-        <TouchableOpacity style={styles.addButton} onPress={() => router.navigate('/AddQueue')}>
-          <Ionicons name="add-circle-outline" size={22} color="#fff" />
-          <Text style={styles.addButtonText}>Add New Queue</Text>
-        </TouchableOpacity>
-
-        {/* Unique Feature Section */}
-        <View style={styles.featureSection}>
-          <Text style={styles.featureTitle}>Upcoming Features 🚀</Text>
-          <Text style={styles.featureText}>
-            Soon you’ll be able to auto-generate queue tickets, send reminders
-            to users, and monitor live waiting times — all from this dashboard!
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </ScreenWrapper>
     </>
   );
 };
@@ -90,6 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9fafb",
     paddingHorizontal: 16,
+    marginTop: 20,
   },
   header: {
     flexDirection: "row",

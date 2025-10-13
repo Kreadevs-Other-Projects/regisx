@@ -10,13 +10,11 @@ import {
   Alert,
 } from "react-native";
 import DateTimePicker, {
-  AndroidEvent,
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "@/components/ScreenWrapper";
 
-// 🟢 Define the shape of your form data
 interface QueueForm {
   queueName: string;
   totalTickets: string;
@@ -35,30 +33,38 @@ const AddQueue: React.FC = () => {
   const [showStartPicker, setShowStartPicker] = useState<boolean>(false);
   const [showEndPicker, setShowEndPicker] = useState<boolean>(false);
 
-  // 🔹 Update form fields dynamically
   const handleInputChange = (key: keyof QueueForm, value: string | Date) => {
     setForm((prevForm) => ({ ...prevForm, [key]: value }));
   };
 
-  // 🔹 Handle Start Time Picker change
   const onStartChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (selectedDate) handleInputChange("startTime", selectedDate);
     setShowStartPicker(false);
   };
 
-  // 🔹 Handle End Time Picker change
   const onEndChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (selectedDate) handleInputChange("endTime", selectedDate);
     setShowEndPicker(false);
   };
 
-  // 🔹 Handle Submit
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { queueName, totalTickets } = form;
 
     if (!queueName.trim() || !totalTickets.trim()) {
       Alert.alert("Validation Error", "Please fill in all fields");
       return;
+    }
+
+    const response = await fetch(``, {
+      method: "POST",
+      headers: {
+        "Content-Type": "Application/json",
+      },
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
     }
 
     console.log("Queue Created:", form);

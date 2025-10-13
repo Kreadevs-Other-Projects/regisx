@@ -14,6 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { colors } from "@/constants/style";
 
 // 🟩 Interface for form data
 interface OrgForm {
@@ -59,7 +60,6 @@ const RegisterOrganization: React.FC = () => {
     }
   };
 
-  // 📨 Submit form
   const handleSubmit = async () => {
     const { name, email, password, orgType, city, country, fullAddress, logo } =
       form;
@@ -104,17 +104,21 @@ const RegisterOrganization: React.FC = () => {
       }
 
       const response = await fetch(
-        "http://192.168.100.7:5000/api/org/register", { 
+        "http://192.168.100.60:5000/api/org/register",
+        {
           method: "POST",
-          headers: { 
-            "Content-Type": "multipart/form-data" 
+          headers: {
+            "Content-Type": "multipart/form-data",
           },
-          body: formData
+          body: formData,
         }
       );
 
       Alert.alert("Success");
-      router.navigate({pathname: '/verifyEmail', params: {email: form.email}})
+      router.navigate({
+        pathname: "/verifyEmail",
+        params: { email: form.email },
+      });
     } catch (error: any) {
       console.log(
         "❌ Registration error:",
@@ -170,7 +174,6 @@ const RegisterOrganization: React.FC = () => {
         onChangeText={(text) => handleChange("password", text)}
       />
 
-      {/* Organization Type */}
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={form.orgType}
@@ -211,7 +214,16 @@ const RegisterOrganization: React.FC = () => {
         onPress={handleSubmit}
       >
         <Text style={styles.buttonText}>
-          {loading ? "Registering..." : "Register Organization"}
+          {loading ? "Registering..." : "Register"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: colors.neutral200 }]}
+        onPress={() => router.navigate("/auth/OrgAuth/LoginOrg")}
+      >
+        <Text style={[styles.buttonText, { color: colors.neutral500 }]}>
+          Login
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -225,6 +237,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9f9f9",
     padding: 20,
+    marginTop: 30,
   },
   heading: {
     fontSize: 26,
@@ -250,14 +263,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoImage: {
-    width: 120,
-    height: 120,
+    width: 80,
+    height: 80,
     borderRadius: 60,
   },
   input: {
     backgroundColor: "#fff",
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     fontSize: 16,
     borderWidth: 1,
@@ -273,10 +286,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#388E3C",
-    paddingVertical: 14,
+    paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 10,
   },
   buttonText: {
     color: "#fff",

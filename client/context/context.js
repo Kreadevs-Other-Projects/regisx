@@ -50,6 +50,10 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchOrganizations = async () => {
+    const response = await fetch("", {});
+  };
+
   return (
     <AppContext.Provider
       value={{
