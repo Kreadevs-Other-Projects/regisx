@@ -2,442 +2,285 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   Image,
-  Modal,
+  Alert,
   Platform,
-  Pressable,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Dropdown } from "react-native-element-dropdown";
-import { colors } from "@/constants/style";
-import { verticalScale } from "react-native-size-matters";
-import ScreenWrapper from "@/components/ScreenWrapper";
+import { Picker } from "@react-native-picker/picker";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
-export default function OrgOnboarding() {
-  const [step, setStep] = useState(1);
-  const [image, setImage] = useState<string | null>(null);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [showDate, setShowDate] = useState(false);
+// 🟩 Interface for form data
+interface OrgForm {
+  name: string;
+  email: string;
+  password: string;
+  orgType: string;
+  city: string;
+  country: string;
+  fullAddress: string;
+  logo: string | null;
+}
 
-  const [form, setForm] = useState({
+const RegisterOrganization: React.FC = () => {
+  const [form, setForm] = useState<OrgForm>({
     name: "",
     email: "",
     password: "",
-    address: "",
-    openTime: new Date(),
-    closeTime: new Date(),
-    days: [] as string[],
     orgType: "",
+    city: "",
+    country: "",
+    fullAddress: "",
+    logo: null,
   });
 
-  const categories = [
-    { label: "Health Care", value: "healthcare" },
-    { label: "Banks", value: "bank" },
-    { label: "Government", value: "government" },
-    { label: "Education", value: "education" },
-    { label: "Corporate", value: "corporate" },
-    { label: "Telecom", value: "telecom" },
-  ];
+  const [loading, setLoading] = useState(false);
 
-  const toggleDay = (day: string) => {
-    setForm((prev) => ({
-      ...prev,
-      days: prev.days.includes(day)
-        ? prev.days.filter((d) => d !== day)
-        : [...prev.days, day],
-    }));
+  const handleChange = (key: keyof OrgForm, value: string) => {
+    setForm({ ...form, [key]: value });
   };
 
-  const onTimeChange = (
-    key: "openTime" | "closeTime",
-    event: any,
-    selectedTime?: Date
-  ) => {
-    if (event.type === "dismissed") {
-      setShowDate(false);
-      return;
-    }
-    if (selectedTime) {
-      setForm({
-        ...form,
-        [key]: selectedTime,
-      });
-    }
-    setShowDate(false);
-  };
-
+  // 📸 Pick image from gallery
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
+      quality: 0.7,
     });
+
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setForm({ ...form, logo: uri });
     }
   };
 
-  const handleNext = () => {
-    if (step < 2) setStep(step + 1);
-    else setModalVisible(true);
-  };
+  // 📨 Submit form
+  const handleSubmit = async () => {
+    const { name, email, password, orgType, city, country, fullAddress, logo } =
+      form;
 
-  const handlePrev = () => {
-    if (step > 1) setStep(step - 1);
-  };
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !orgType ||
+      !city ||
+      !country ||
+      !fullAddress ||
+      !logo
+    ) {
+      Alert.alert(
+        "Missing Fields",
+        "Please fill all fields and upload a logo."
+      );
+      return;
+    }
 
-  const handleRegister = async () => {
     try {
-      const res = await fetch("http://192.168.100.102:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          profileImage: image,
-        }),
-      });
+      setLoading(true);
 
-      const data = await res.json();
-      console.log(data);
-      setModalVisible(false);
-      alert("Organization Registered Successfully!");
-    } catch (error) {
-      console.error("Registration Error:", error);
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("password", password);
+      formData.append("orgType", orgType);
+      formData.append("city", city);
+      formData.append("country", country);
+      formData.append("fullAddress", fullAddress);
+
+      if (logo) {
+        const fileName = logo.split("/").pop()!;
+        const fileType = fileName.split(".").pop();
+        formData.append("logo", {
+          uri: logo,
+          name: fileName,
+          type: `image/${fileType}`,
+        } as any);
+      }
+
+      const response = await fetch(
+        "http://192.168.100.7:5000/api/org/register", { 
+          method: "POST",
+          headers: { 
+            "Content-Type": "multipart/form-data" 
+          },
+          body: formData
+        }
+      );
+
+      Alert.alert("Success");
+      router.navigate({pathname: '/verifyEmail', params: {email: form.email}})
+    } catch (error: any) {
+      console.log(
+        "❌ Registration error:",
+        error.response?.data || error.message
+      );
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "Something went wrong. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <ScreenWrapper>
-        <ScrollView
-          contentContainerStyle={{ padding: 20 }}
-          showsVerticalScrollIndicator={false}
+    <ScrollView style={styles.container}>
+      <Text style={styles.heading}>Register Organization</Text>
+      <Text style={styles.subText}>
+        Create your organization account below.
+      </Text>
+
+      {/* Logo Picker */}
+      <TouchableOpacity style={styles.logoPicker} onPress={pickImage}>
+        {form.logo ? (
+          <Image source={{ uri: form.logo }} style={styles.logoImage} />
+        ) : (
+          <View style={styles.logoPlaceholder}>
+            <Ionicons name="image-outline" size={40} color="#888" />
+            <Text style={{ color: "#888", marginTop: 5 }}>Upload Logo</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {/* Input Fields */}
+      <TextInput
+        style={styles.input}
+        placeholder="Organization Name"
+        value={form.name}
+        onChangeText={(text) => handleChange("name", text)}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        keyboardType="email-address"
+        value={form.email}
+        onChangeText={(text) => handleChange("email", text)}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        secureTextEntry
+        value={form.password}
+        onChangeText={(text) => handleChange("password", text)}
+      />
+
+      {/* Organization Type */}
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={form.orgType}
+          onValueChange={(value) => handleChange("orgType", value)}
         >
-          <Text style={styles.heading}>Organization Onboarding</Text>
+          <Picker.Item label="Select Organization Type" value="" />
+          <Picker.Item label="Bank" value="bank" />
+          <Picker.Item label="Hospital" value="hospital" />
+          <Picker.Item label="Government Office" value="government" />
+          <Picker.Item label="Private Company" value="private" />
+        </Picker>
+      </View>
 
-          {step === 1 ? (
-            <>
-              <Text style={styles.subHeading}>Personal Details</Text>
-              <TextInput
-                placeholder="Organization Name"
-                style={styles.input}
-                value={form.name}
-                onChangeText={(t) => setForm({ ...form, name: t })}
-              />
-              <TextInput
-                placeholder="Email"
-                style={styles.input}
-                keyboardType="email-address"
-                value={form.email}
-                onChangeText={(t) => setForm({ ...form, email: t })}
-              />
-              <TextInput
-                placeholder="Password"
-                style={styles.input}
-                secureTextEntry
-                value={form.password}
-                onChangeText={(t) => setForm({ ...form, password: t })}
-              />
+      <TextInput
+        style={styles.input}
+        placeholder="City"
+        value={form.city}
+        onChangeText={(text) => handleChange("city", text)}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Country"
+        value={form.country}
+        onChangeText={(text) => handleChange("country", text)}
+      />
+      <TextInput
+        style={[styles.input, { height: 90 }]}
+        placeholder="Full Address"
+        multiline
+        value={form.fullAddress}
+        onChangeText={(text) => handleChange("fullAddress", text)}
+      />
 
-              <TouchableOpacity style={styles.button} onPress={handleNext}>
-                <Text style={styles.buttonText}>Next</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.subHeading}>Organization Details</Text>
-
-              <TouchableOpacity style={styles.uploadBtn} onPress={pickImage}>
-                <Text style={{ color: colors.primary, fontWeight: "600" }}>
-                  Upload Organization Logo
-                </Text>
-              </TouchableOpacity>
-              {image && (
-                <Image
-                  source={{ uri: image }}
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 50,
-                    alignSelf: "center",
-                    marginVertical: 10,
-                  }}
-                />
-              )}
-
-              <TextInput
-                placeholder="Full Address"
-                style={styles.input}
-                value={form.address}
-                onChangeText={(t) => setForm({ ...form, address: t })}
-              />
-
-              {!showDate && (
-                <Pressable
-                  style={styles.dateInput}
-                  onPress={() => setShowDate(true)}
-                >
-                  <Text style={{ fontSize: 16 }}>
-                    {form.openTime.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                </Pressable>
-              )}
-
-              <Text style={styles.label}>Opening Time</Text>
-              {showDate && (
-                <DateTimePicker
-                  value={form.openTime as Date}
-                  mode="time" // 👈 change this
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(event, time) =>
-                    onTimeChange("openTime", event, time)
-                  }
-                />
-              )}
-
-              {!showDate && (
-                <Pressable
-                  style={styles.dateInput}
-                  onPress={() => setShowDate(true)}
-                >
-                  <Text style={{ fontSize: 16 }}>
-                    {form.openTime.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                </Pressable>
-              )}
-
-              <Text style={styles.label}>Closing Time</Text>
-              {showDate && (
-                <DateTimePicker
-                  value={form.closeTime as Date}
-                  mode="time"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(event, time) =>
-                    onTimeChange("closeTime", event, time)
-                  }
-                />
-              )}
-
-              <Text style={styles.label}>Select Working Days</Text>
-              <View style={styles.daysRow}>
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
-                  (day) => (
-                    <TouchableOpacity
-                      key={day}
-                      onPress={() => toggleDay(day)}
-                      style={[
-                        styles.dayButton,
-                        form.days.includes(day) && {
-                          backgroundColor: colors.primary,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.dayText,
-                          form.days.includes(day) && { color: "white" },
-                        ]}
-                      >
-                        {day}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                )}
-              </View>
-
-              <Text style={styles.label}>Organization Type</Text>
-              <Dropdown
-                style={styles.dropdown}
-                data={categories}
-                labelField="label"
-                valueField="value"
-                placeholder="Select Organization Type"
-                value={form.orgType}
-                onChange={(item) => setForm({ ...form, orgType: item.value })}
-              />
-
-              <TouchableOpacity style={styles.button} onPress={handleNext}>
-                <Text style={styles.buttonText}>Submit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handlePrev}>
-                <Text style={styles.backText}>Back</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          {/* ✅ Verification Modal */}
-          <Modal visible={isModalVisible} transparent animationType="slide">
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalBox}>
-                <Text style={styles.modalTitle}>Email Verification</Text>
-                <Text style={styles.modalSub}>
-                  Please enter the 6-digit code sent to your email.
-                </Text>
-                <TextInput
-                  placeholder="Enter verification code"
-                  keyboardType="numeric"
-                  maxLength={6}
-                  value={verificationCode}
-                  onChangeText={setVerificationCode}
-                  style={styles.input}
-                />
-
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => handleRegister()}
-                >
-                  <Text style={styles.buttonText}>Verify & Register</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.buttonOutline}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.outlineText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        </ScrollView>
-      </ScreenWrapper>
-    </View>
+      {/* Submit Button */}
+      <TouchableOpacity
+        style={[styles.button, loading && { opacity: 0.6 }]}
+        disabled={loading}
+        onPress={handleSubmit}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Registering..." : "Register Organization"}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
-}
+};
+
+export default RegisterOrganization;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "white" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+    padding: 20,
+  },
   heading: {
     fontSize: 26,
     fontWeight: "700",
-    color: colors.primary,
-    textAlign: "center",
-    marginBottom: 15,
+    color: "#2e7d32",
+    marginTop: 10,
   },
-  subHeading: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#444",
+  subText: {
+    color: "#555",
     marginBottom: 20,
-    textAlign: "center",
+  },
+  logoPicker: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  logoPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#eaeaea",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
   input: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 16,
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 15,
-    marginBottom: 15,
+    marginBottom: 12,
   },
-  label: {
-    fontWeight: "600",
-    marginBottom: 6,
-    color: "#333",
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginVertical: 8,
-  },
-  buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
-  backText: {
-    textAlign: "center",
-    color: colors.primary,
-    marginTop: 10,
-    fontWeight: "500",
-  },
-  uploadBtn: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  daysRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 15,
-  },
-  dayButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  pickerContainer: {
+    backgroundColor: "#fff",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  dayText: {
-    color: colors.primary,
-    fontWeight: "500",
-  },
-  dropdown: {
-    borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 50,
-    marginBottom: 15,
+    marginBottom: 12,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBox: {
-    width: "85%",
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.primary,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  modalSub: {
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 15,
-  },
-  buttonOutline: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
+  button: {
+    backgroundColor: "#388E3C",
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 20,
   },
-  outlineText: {
-    color: colors.primary,
+  buttonText: {
+    color: "#fff",
     fontWeight: "600",
-  },
-
-  dateInput: {
-    height: verticalScale(40),
-    backgroundColor: colors.neutral100,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.neutral300,
-    borderRadius: 17,
-    borderCurve: "continuous",
-    paddingHorizontal: 15,
+    fontSize: 16,
   },
 });

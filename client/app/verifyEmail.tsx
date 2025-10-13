@@ -6,8 +6,11 @@ import { router, useLocalSearchParams } from "expo-router";
 function VerifyEmail() {
   const { email } = useLocalSearchParams();
   const [code, setCode] = useState("");
+  // const [email, ] = useState("");
 
   const verify = async () => {
+    console.log("clicker");
+    
     if (!email) {
       Toast.show({
         type: "error",
@@ -22,7 +25,7 @@ function VerifyEmail() {
 
     try {
       const response = await fetch(
-        `http://192.168.100.102:5000/api/auth/verifyEmail`,
+        `http://192.168.100.7:5000/api/org/verifyEmail`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -57,6 +60,19 @@ function VerifyEmail() {
         padding: 20,
       }}
     >
+      <TextInput
+        // placeholder="Verification Code"
+        value={email}
+        editable={false}
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          padding: 10,
+          borderRadius: 8,
+          width: "80%",
+          marginBottom: 20,
+        }}
+      />
       <TextInput
         placeholder="Verification Code"
         value={code}

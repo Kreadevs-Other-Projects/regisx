@@ -9,7 +9,7 @@ const OrganizationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   orgType: {
     type: String,
-    enum: ["Bank", "Healthcare", "Government", "Education", "Retail", "Other"],
+    enum: ["bank", "Healthcare", "Government", "Education", "Retail", "Other"],
     required: true,
   },
   city: { type: String, required: true },
