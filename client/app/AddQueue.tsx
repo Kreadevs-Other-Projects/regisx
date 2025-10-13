@@ -80,7 +80,6 @@ const AddQueue: React.FC = () => {
             Create and manage today's queues efficiently.
           </Text>
 
-          {/* Queue Name */}
           <Text style={styles.label}>Queue Name</Text>
           <TextInput
             placeholder="e.g., Cash Withdrawal"
@@ -90,7 +89,6 @@ const AddQueue: React.FC = () => {
             onChangeText={(text) => handleInputChange("queueName", text)}
           />
 
-          {/* Total Tickets */}
           <Text style={styles.label}>Total Tickets</Text>
           <TextInput
             placeholder="e.g., 50"
@@ -101,7 +99,6 @@ const AddQueue: React.FC = () => {
             onChangeText={(text) => handleInputChange("totalTickets", text)}
           />
 
-          {/* Start Time */}
           <Text style={styles.label}>Start Time</Text>
           <TouchableOpacity
             style={styles.timePickerButton}
@@ -125,7 +122,6 @@ const AddQueue: React.FC = () => {
             />
           )}
 
-          {/* End Time */}
           <Text style={styles.label}>End Time</Text>
           <TouchableOpacity
             style={styles.timePickerButton}
@@ -149,7 +145,6 @@ const AddQueue: React.FC = () => {
             />
           )}
 
-          {/* Submit Button */}
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
             <Ionicons name="add-circle-outline" size={22} color="#fff" />
             <Text style={styles.submitText}>Create Queue</Text>
